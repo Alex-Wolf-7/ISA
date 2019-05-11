@@ -21,7 +21,7 @@ dm #(.DW(DW),.AW(AW)) dm1(.*); // instantiate data memory
 // the following sequence makes sure the test bench
 //  stops; in practice, you will want to tie your ack
 //  flags to the completion of each program
-always @(posedge clk) begin
+always_ff @(posedge clk) begin
   if(reset) begin
     ct  <= 0;
 	ack <= 0;
@@ -31,9 +31,9 @@ always @(posedge clk) begin
 	ack <= 0;
   end
   else begin
-    if(ct<255) 
+    if(ct<255) begin
       ct <= ct+1;
-    else
+    end else
       ack <= 1;				   // tells test bench to request next program
   end
 end
