@@ -9,7 +9,12 @@ module controldecoder (
   output		   WriteEnabled,
   output		   DataWrite,
   output		   DataRead,
-  output [2:0] ALUOp
+  output [2:0] ALUOp,
+  output       controlBranch,
+  output       aluRegSource,
+  output       aluConstantOrOne,
+  output       saveAluToReg,
+  output       prepCommand
 );
 
 logic prepEnabled;
@@ -24,8 +29,10 @@ always_comb begin
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
 		  enablePrep = 1;
+		  disablePrep = 0;
 		  DataWrite = 0;
 		  DataRead = 0;
+		  ALUOp = 3'b000;  // add, not used
 		end
 		
 		001: begin  // INC
@@ -33,11 +40,12 @@ always_comb begin
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
 		  enablePrep = 0;
+		  disablePrep = 0;
 		  DataWrite = 0;
 		  DataRead = 0;
 		  if (lastBit == 1'b1) begin
 		    ALUOp = 3'b000;  // increment (add?)
-		  else begin
+		  end else begin
 			 ALUOp = 3'b001;  // decrement (sub?)
 		  end
 		end
@@ -47,6 +55,7 @@ always_comb begin
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
 		  enablePrep = 0;
+		  disablePrep = 0;
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b010;  // bitwise xor
@@ -57,6 +66,7 @@ always_comb begin
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
 		  enablePrep = 0;
+		  disablePrep = 0;
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b011;  // reducing xor
@@ -67,6 +77,7 @@ always_comb begin
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
 		  enablePrep = 0;
+		  disablePrep = 0;
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b100;  // left shift
@@ -77,6 +88,7 @@ always_comb begin
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
 		  enablePrep = 0;
+		  disablePrep = 0;
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b101;  // right shift
@@ -84,10 +96,38 @@ always_comb begin
 		
 		110: begin
 		  $display("Unused opcode, 110 (no prep)!");
+		  WritePrepReg = 0;
+		  ReadPrepReg = 0;
+		  WriteEnabled = 0;
+		  enablePrep = 0;
+		  disablePrep = 0;
+		  DataWrite = 0;
+		  DataRead = 0;
+		  ALUOp = 3'b000;
 		end
 		
 		111: begin
 		  $display("Unused opcode, 111! (no prep)");
+		  WritePrepReg = 0;
+		  ReadPrepReg = 0;
+		  WriteEnabled = 0;
+		  enablePrep = 0;
+		  disablePrep = 0;
+		  DataWrite = 0;
+		  DataRead = 0;
+		  ALUOp = 3'b000;
+		end
+		
+		default: begin
+		  $display("Default hit controldecoder! (no prep)");
+		  WritePrepReg = 0;
+		  ReadPrepReg = 0;
+		  WriteEnabled = 0;
+		  enablePrep = 0;
+		  disablePrep = 0;
+		  DataWrite = 0;
+		  DataRead = 0;
+		  ALUOp = 3'b000;
 		end
 		
     endcase
@@ -97,6 +137,7 @@ always_comb begin
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 1;
+		  enablePrep = 0;
 		  disablePrep = 1;
 		  DataWrite = 0;
 		  DataRead = 0;
@@ -107,6 +148,7 @@ always_comb begin
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 0;
+		  enablePrep = 0;
 		  disablePrep = 1;
 		  DataWrite = 0;
 		  DataRead = 0;
@@ -117,35 +159,40 @@ always_comb begin
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 1;
+		  enablePrep = 0;
 		  disablePrep = 1;
 		  DataWrite = 0;
 		  DataRead = 1;
-		  // ALUOp = ???
+		  ALUOp = 3'b000;  // add
 		end
 		
 		011: begin  // SW
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 0;
+		  enablePrep = 0;
 		  disablePrep = 1;
 		  DataWrite = 1;
 		  DataRead = 0;
-		  // ALUOp = ???
+		  ALUOp = 3'b000;  // add
 		end
 		
 		100: begin  // SAVE
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 1;
+		  enablePrep = 0;
 		  disablePrep = 1;
 		  DataWrite = 0;
 		  DataRead = 0;
+		  ALUOp = 3'b000;  // add
 		end
 		
 		101: begin  // PSFT
 		  WritePrepReg = 1;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 1;
+		  enablePrep = 0;
 		  disablePrep = 0;
 		  DataWrite = 0;
 		  DataRead = 0;
@@ -154,10 +201,38 @@ always_comb begin
 		
 		110: begin
 		  $display("Unused opcode, 110! (with prep)");
+		  WritePrepReg = 0;
+		  ReadPrepReg = 0;
+		  WriteEnabled = 0;
+		  enablePrep = 0;
+		  disablePrep = 0;
+		  DataWrite = 0;
+		  DataRead = 0;
+		  ALUOp = 3'b000;
 		end
 		
 		111: begin
 		  $display("Unused opcode, 111! (with prep)");
+		  WritePrepReg = 0;
+		  ReadPrepReg = 0;
+		  WriteEnabled = 0;
+		  enablePrep = 0;
+		  disablePrep = 0;
+		  DataWrite = 0;
+		  DataRead = 0;
+		  ALUOp = 3'b000;
+		end
+		
+		default: begin
+		  $display("Default hit controldecoder! (with prep)");
+		  WritePrepReg = 0;
+		  ReadPrepReg = 0;
+		  WriteEnabled = 0;
+		  enablePrep = 0;
+		  disablePrep = 0;
+		  DataWrite = 0;
+		  DataRead = 0;
+		  ALUOp = 3'b000;
 		end
     endcase
   end

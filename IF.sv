@@ -11,11 +11,11 @@ module IF(
   input [15:0] Target,		  // jump ... "how high?"
   input Init,				  // reset, start, etc. 
   input Halt,				  // 1: freeze PC; 0: run PC
-  input CLK,				  // PC can change on pos. edges only
+  input clk,				  // PC can change on pos. edges only
   output logic[15:0] PC		  // program counter
   );
 	 
-  always_ff @(posedge CLK)	  // or just always; always_ff is a linting construct
+  always_ff @(posedge clk)	  // or just always; always_ff is a linting construct
 	 if(Init)
 	   PC <= 0;				  // for first program; want different value for 2nd or 3rd
 	 else if(Halt)

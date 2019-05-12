@@ -40,6 +40,12 @@ always_comb begin
 	 
 	 111: begin  // unused
 	   $display("Unused ALU operation, 111!");
+		Output = input1;
+	 end
+	 
+	 default: begin
+	   $display("Unused ALU operation, default!");
+		Output = input1;
 	 end
   endcase
 end
