@@ -1,19 +1,59 @@
 // dummy processor -- substitute your top level design
 // CSE141L   Spring 2019
-module prog #(parameter AW = 8, DW = 8, A = 12, W = 9)
+module TopLevel #(parameter AW = 8, DW = 8, A = 16, W = 9)
  (input        clk,
                reset,	       // master reset from bench: "start over"
-		       req,		       // from test bench: "do next program"
+		         req,		       // from test bench: "do next program"
   output logic ack);	       // to test bench: "done with that program"
 
 logic[15:0] ct;                // dummy cycle counter
 
+logic [AW-1:0] DmMemAdr;	     // memory address pointer, shared for read and write
+logic          DmReadEn;   // can tie high in most designs
+logic          DmWriteEn;   // normally low, but high for STORE
+logic [DW-1:0] DmDatIn;		     // data path in, for STORE operations
+wire  [DW-1:0] DmDatOut;
 
-logic  [AW-1:0] DmMemAdr;	       // memory address pointer, shared for read and write
-logic           DmReadEn  = 1;   // can tie high in most designs
-logic           DmWriteEn = 0;   // normally low, but high for STORE
-logic  [DW-1:0] DmDatIn;		   // data path in, for STORE operations
-wire   [DW-1:0] DmDatOut;		   // data path out, for LOAD operations 
+logic [2:0]    AluOperation;
+logic [DW-1:0] AluInput1;
+logic [DW-1:0] AluInput2;
+wire  [DW-1:0] AluOutput;
+wire 		   	AluZero;
+
+logic				regfileWritePrepReg;
+logic		      regfileReadPrepReg;
+logic          regfileWriteEnabled;
+logic [1:0]    regfileReadReg1;
+logic [1:0]    regfileReadReg2;
+logic [1:0]    regfileWriteReg;
+logic [DW-1:0] regfileWriteData;
+wire  [DW-1:0] regfileReadData1;
+wire  [DW-1:0] regfileReadData2;
+
+logic [2:0]    controlOpcode;
+logic			   controlLastBit;
+wire		      controlWritePrepReg;
+wire		      controlReadPrepReg;
+wire		      controlWriteEnabled;
+wire		      controlDataWrite;
+wire		      controlDataRead;
+wire  [2:0]    controlALUOp;
+wire           controlBranch;
+wire           controlAluRegSource;
+wire           controlAluConstantOrOne;
+wire           controlSaveAluToReg;
+wire  		   controlPrepCommand;
+
+logic          IfBranch_rel;
+logic          IfALU_zero;
+logic [15:0]   IfTarget;
+logic          IfInit;
+logic          IfHalt;
+wire  [15:0]   IfPC;
+
+logic [A-1:0]  InstAddress;
+wire  [W-1:0]  InstOut;
+		   // data path out, for LOAD operations 
 dm #(.DW(DW),.AW(AW)) dm(
   clk,
   DmMemAdr,
@@ -27,15 +67,7 @@ assign DmReadEn = controlDataRead;
 assign DmWriteEn = controlDataWrite;
 assign DmDatIn = regfileReadData2;
 
-logic				regfileWritePrepReg;
-logic		      regfileReadPrepReg;
-logic          regfileWriteEnabled;
-logic [AW-1:0] regfileReadReg1;
-logic [AW-1:0] regfileReadReg2;
-logic [AW-1:0] regfileWriteReg;
-logic [DW-1:0] regfileWriteData;
-wire  [DW-1:0] regfileReadData1;
-wire  [DW-1:0] regfileReadData2;
+
 regfile regfile(
   clk,
   regfileWritePrepReg,
@@ -45,6 +77,7 @@ regfile regfile(
   regfileReadReg2,
   regfileWriteReg,
   regfileWriteData,
+  reset,
   regfileReadData1,
   regfileReadData2
 );
@@ -63,23 +96,11 @@ always_comb begin
     regfileWriteData[DW-1:6] = 2'b00;
 	 regfileWriteData[5:0]    = InstOut[5:0];
   end else begin
-    regfileWriteData         = regfileReadReg1;
+    regfileWriteData         = regfileReadData1;
   end
 end
 
-logic [2:0] controlOpcode;
-logic			controlLastBit;
-wire		   controlWritePrepReg;
-wire		   controlReadPrepReg;
-wire		   controlWriteEnabled;
-wire		   controlDataWrite;
-wire		   controlDataRead;
-wire  [2:0] controlALUOp;
-wire        controlBranch;
-wire        controlAluRegSource;
-wire        controlAluConstantOrOne;
-wire        controlSaveAluToReg;
-wire  		controlPrepCommand;
+
 controldecoder controldecoder(
   clk,
   reset,
@@ -100,11 +121,7 @@ controldecoder controldecoder(
 assign controlOpcode = InstOut[8:6];
 assign controlLastBit = InstOut[0];
 
-logic [2:0]    AluOperation;
-logic [DW-1:0] AluInput1;
-logic [DW-1:0] AluInput2;
-wire  [DW-1:0] AluOutput;
-wire 		   	AluZero;
+
 ALU ALU(
   AluOperation,
   AluInput1,
@@ -125,12 +142,7 @@ always_comb begin
   end
 end
 
-logic        IfBranch_rel;
-logic        IfALU_zero;
-logic [15:0] IfTarget;
-logic        IfInit;
-logic        IfHalt;
-wire  [15:0] IfPC;
+
 IF IF(
   IfBranch_rel,
   IfALU_zero,
@@ -138,6 +150,7 @@ IF IF(
   IfInit,
   IfHalt,
   clk,
+  req,
   IfPC
 );
 assign IfBranch_rel = controlBranch;
@@ -146,9 +159,11 @@ assign IfTarget = regfileReadData1;
 assign IfInit = reset;
 assign IfHalt = ack;
 
-logic [A-1:0] InstAddress;
-wire  [W-1:0] InstOut;
+
 InstROM #(.A(A),.W(W)) InstROM(.*);
+assign InstAddress = IfPC;
+
+assign ack = (IfPC == 9'b111_11_11_11);
 // optional data width and address width parametric overrides
 
 // the following sequence makes sure the test bench
@@ -157,17 +172,12 @@ InstROM #(.A(A),.W(W)) InstROM(.*);
 always_ff @(posedge clk) begin
   if(reset) begin
     ct  <= 0;
-	ack <= 0;
   end
   else if(req) begin
 	ct  <= 0;
-	ack <= 0;
   end
   else begin
-    if(ct<255) begin
-      ct <= ct+1;
-    end else
-      ack <= 1;				   // tells test bench to request next program
+    ct <= ct+1;
   end
 end
 

@@ -8,6 +8,7 @@ module regfile #(parameter AW=2,			     // address width; 2^AW is number of regs
   input        [AW-1:0]  ReadReg2,
   input		   [AW-1:0]  WriteReg,
   input		   [DW-1:0]  WriteData,
+  input						 reset,
   output logic [DW-1:0]  ReadData1,
   output logic [DW-1:0]  ReadData2
 );	  	
@@ -28,7 +29,13 @@ module regfile #(parameter AW=2,			     // address width; 2^AW is number of regs
 
   // WRITE LOGIC
   always_ff @ (posedge clk)	             // writes are clocked / sequential
-    if (WriteEnabled) begin
+    if (reset) begin
+	   regs[0] = 8'h00;
+		regs[1] = 8'h00;
+		regs[2] = 8'h00;
+		regs[3] = 8'h00;
+    end
+	 else if (WriteEnabled) begin
 	   if (WritePrepReg) begin
 		  prep <= WriteData;
 		end else begin

@@ -1,31 +1,32 @@
 module controldecoder (
   input        clk,
   input		   reset,
-  input [2:0]  opcode,
+  input  [2:0] opcode,
   input			lastBit,
   
-  output		   WritePrepReg,
-  output		   ReadPrepReg,
-  output		   WriteEnabled,
-  output		   DataWrite,
-  output		   DataRead,
-  output [2:0] ALUOp,
-  output       controlBranch,
-  output       aluRegSource,
-  output       aluConstantOrOne,
-  output       saveAluToReg,
-  output       prepCommand
+  output logic       WritePrepReg,
+  output	logic       ReadPrepReg,
+  output	logic	      WriteEnabled,
+  output	logic	      DataWrite,
+  output	logic	      DataRead,
+  output logic [2:0] ALUOp,
+  output logic       controlBranch,     // if we are branching
+  output logic       aluRegSource,      // if 1, input 2 to ALU is regfileReadData2
+  output logic       aluConstantOrOne,  // if true, ALU input is 1, otherwise is constant
+  output logic       saveAluToReg,      // data written to regfile is output of ALU
+  output logic       prepCommand        // is prep command, data written to regfile is constant
 );
 
 logic prepEnabled;
 logic enablePrep;
 logic disablePrep;
+logic [2:0] lastOp;
 
 always_comb begin
   if (!prepEnabled) begin
     case (opcode)
-	   000: begin  // PREP
-		  WritePrepReg = 1;
+	   3'b000: begin  // PREP
+		  WritePrepReg = 1'b1;
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
 		  enablePrep = 1;
@@ -33,9 +34,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b000;  // add, not used
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 1;
 		end
 		
-		001: begin  // INC
+		3'b001: begin  // INC
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
@@ -48,9 +54,14 @@ always_comb begin
 		  end else begin
 			 ALUOp = 3'b001;  // decrement (sub?)
 		  end
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 1;
+		  saveAluToReg = 1;
+		  prepCommand = 0;
 		end
 		
-		010: begin  // XOR
+		3'b010: begin  // XOR
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
@@ -59,9 +70,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b010;  // bitwise xor
+		  controlBranch = 0;
+		  aluRegSource = 1;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 1;
+		  prepCommand = 0;
 		end
 		
-		011: begin  // XORR
+		3'b011: begin  // XORR
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
@@ -70,9 +86,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b011;  // reducing xor
+		  controlBranch = 0;
+		  aluRegSource = 0; 
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 1;
+		  prepCommand = 0;
 		end
 		
-		100: begin  // SLL
+		3'b100: begin  // SLL
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
@@ -81,9 +102,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b100;  // left shift
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 1;
+		  prepCommand = 0;
 		end
 		
-		101: begin  // SRL
+		3'b101: begin  // SRL
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
 		  WriteEnabled = 1;
@@ -92,9 +118,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b101;  // right shift
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 1;
+		  prepCommand = 0;
 		end
 		
-		110: begin
+		3'b110: begin
 		  $display("Unused opcode, 110 (no prep)!");
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
@@ -104,10 +135,15 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b000;
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
-		111: begin
-		  $display("Unused opcode, 111! (no prep)");
+		3'b111: begin
+		  $display("Halting program, 111 reached! (no prep)");
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
 		  WriteEnabled = 0;
@@ -116,6 +152,11 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b000;
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
 		default: begin
@@ -128,12 +169,17 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b000;
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
     endcase
   end else begin
     case (opcode)
-	   000: begin  // ANDI
+	   3'b000: begin  // ANDI
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 1;
@@ -142,9 +188,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b110;  // and
+		  controlBranch = 0;
+		  aluRegSource = 1;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 1;
+		  prepCommand = 0;
 		end
 		
-		001: begin  // BEQ
+		3'b001: begin  // BEQ
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 0;
@@ -153,9 +204,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b010;  // xor
+		  controlBranch = 1;
+		  aluRegSource = 1;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
-		010: begin  // LW
+		3'b010: begin  // LW
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 1;
@@ -164,9 +220,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 1;
 		  ALUOp = 3'b000;  // add
+		  controlBranch = 0;
+		  aluRegSource = 1;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
-		011: begin  // SW
+		3'b011: begin  // SW
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 0;
@@ -175,9 +236,14 @@ always_comb begin
 		  DataWrite = 1;
 		  DataRead = 0;
 		  ALUOp = 3'b000;  // add
+		  controlBranch = 0;
+		  aluRegSource = 1;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
-		100: begin  // SAVE
+		3'b100: begin  // SAVE
 		  WritePrepReg = 0;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 1;
@@ -186,9 +252,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b000;  // add
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
-		101: begin  // PSFT
+		3'b101: begin  // PSFT
 		  WritePrepReg = 1;
 		  ReadPrepReg = 1;
 		  WriteEnabled = 1;
@@ -197,9 +268,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b100;  // left shift
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 1;
+		  prepCommand = 0;
 		end
 		
-		110: begin
+		3'b110: begin
 		  $display("Unused opcode, 110! (with prep)");
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
@@ -209,9 +285,14 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b000;
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
-		111: begin
+		3'b111: begin
 		  $display("Unused opcode, 111! (with prep)");
 		  WritePrepReg = 0;
 		  ReadPrepReg = 0;
@@ -221,6 +302,11 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b000;
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
 		
 		default: begin
@@ -233,18 +319,33 @@ always_comb begin
 		  DataWrite = 0;
 		  DataRead = 0;
 		  ALUOp = 3'b000;
+		  controlBranch = 0;
+		  aluRegSource = 0;
+		  aluConstantOrOne = 0;
+		  saveAluToReg = 0;
+		  prepCommand = 0;
 		end
     endcase
   end
 end
 
+always @(negedge clk) begin
+  lastOp <= opcode;
+end
+
 always @(posedge clk) begin
   if(reset) begin
     prepEnabled <= 0;
-  end else if (enablePrep) begin
-    prepEnabled <= 1;
-  end else if (disablePrep) begin
-    prepEnabled <= 0;
+	 
+  end else if (prepEnabled == 0) begin
+    if (lastOp == 3'b000) begin
+	   prepEnabled <= 1;
+	 end
+	 
+  end else begin
+    if (lastOp == 3'b000 || lastOp == 3'b001 || lastOp == 3'b010 || lastOp == 3'b011 || lastOp == 3'b100) begin
+	   prepEnabled <= 0;
+	 end
   end
 end
 

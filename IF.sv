@@ -12,12 +12,15 @@ module IF(
   input Init,				  // reset, start, etc. 
   input Halt,				  // 1: freeze PC; 0: run PC
   input clk,				  // PC can change on pos. edges only
+  input req,
   output logic[15:0] PC		  // program counter
   );
 	 
   always_ff @(posedge clk)	  // or just always; always_ff is a linting construct
 	 if(Init)
 	   PC <= 0;				  // for first program; want different value for 2nd or 3rd
+	 else if (req)
+	   PC <= PC+1;
 	 else if(Halt)
 	   PC <= PC;
 	 else if(Branch_rel && ALU_zero) // conditional relative jump

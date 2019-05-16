@@ -8,9 +8,41 @@
 //
 // Revision: 
 //
-module InstROM #(parameter A=12, W=9) (
+module InstROM #(parameter A=16, W=9) (
   input       [A-1:0] InstAddress,
   output logic[W-1:0] InstOut);
+
+  always_comb begin  
+	  case (InstAddress)
+		 12'b000000000000: begin
+		   InstOut = 9'b000_11_11_11;  // PREP #111111
+		 end
+		 12'b000000000001: begin
+		   InstOut = 9'b100_00_00_00;  // SAVE $r0
+		 end
+		 12'b000000000010: begin
+		   InstOut = 9'b001_01_00_01;  // INC $r1 $r0 up
+		 end
+		 12'b000000000011: begin
+		   InstOut = 9'b001_10_00_00;  // INC $r2 $r0 down
+		 end
+		 12'b000000000100: begin
+		   InstOut = 9'b010_11_01_10;  // XOR $r3 $r1 $r2
+		 end
+		 12'b000000000101: begin
+		   InstOut = 9'b000_00_11_00;  // PREP #001100
+		 end
+		 12'b000000000110: begin
+		   InstOut = 9'b000_10_00_10;  // ANDI $r2 $r2
+		 end
+		 12'b000000000111: begin
+		   InstOut = 9'b011_00_10_00;  // XORR $r2 $r0
+		 end
+		 default: begin
+			InstOut = 9'b111_11_11_11;  // END PROGRAM
+		 end
+	  endcase
+  end
 	 
 // Instruction format: {4bit opcode, 3bit rs or rt, 3bit rt, immediate, or branch target}
 	 
