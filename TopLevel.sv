@@ -62,7 +62,7 @@ dm #(.DW(DW),.AW(AW)) dm(
   DmDatIn,
   DmDatOut
 ); // instantiate data memory
-assign DmMemAdr = AluOutput;
+assign DmMemAdr = regfileReadReg1;
 assign DmReadEn = controlDataRead;
 assign DmWriteEn = controlDataWrite;
 assign DmDatIn = regfileReadData2;
@@ -155,7 +155,14 @@ IF IF(
 );
 assign IfBranch_rel = controlBranch;
 assign IfALU_zero = AluZero;
-assign IfTarget = regfileReadData1;
+always_comb begin
+	if (regfileReadData1[5] == 1'b1) begin
+		IfTarget[15:6] = 10'b1111111111;
+	end else begin
+		IfTarget[15:6] = 10'b0000000000;
+	end
+	IfTarget[5:0] = regfileReadData1[5:0];
+end
 assign IfInit = reset;
 assign IfHalt = ack;
 
@@ -164,22 +171,5 @@ InstROM #(.A(A),.W(W)) InstROM(.*);
 assign InstAddress = IfPC;
 
 assign ack = (IfPC == 9'b111_11_11_11);
-// optional data width and address width parametric overrides
-
-// the following sequence makes sure the test bench
-//  stops; in practice, you will want to tie your ack
-//  flags to the completion of each program
-always_ff @(posedge clk) begin
-  if(reset) begin
-    ct  <= 0;
-  end
-  else if(req) begin
-	ct  <= 0;
-  end
-  else begin
-    ct <= ct+1;
-  end
-end
-
 
 endmodule

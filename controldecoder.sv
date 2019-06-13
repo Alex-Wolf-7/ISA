@@ -203,7 +203,7 @@ always_comb begin
 		  disablePrep = 1;
 		  DataWrite = 0;
 		  DataRead = 0;
-		  ALUOp = 3'b010;  // xor
+		  ALUOp = 3'b111;  // $r2 is 0
 		  controlBranch = 1;
 		  aluRegSource = 1;
 		  aluConstantOrOne = 0;
@@ -221,7 +221,7 @@ always_comb begin
 		  DataRead = 1;
 		  ALUOp = 3'b000;  // add
 		  controlBranch = 0;
-		  aluRegSource = 1;
+		  aluRegSource = 0;
 		  aluConstantOrOne = 0;
 		  saveAluToReg = 0;
 		  prepCommand = 0;
@@ -237,7 +237,7 @@ always_comb begin
 		  DataRead = 0;
 		  ALUOp = 3'b000;  // add
 		  controlBranch = 0;
-		  aluRegSource = 1;
+		  aluRegSource = 0;
 		  aluConstantOrOne = 0;
 		  saveAluToReg = 0;
 		  prepCommand = 0;
@@ -275,20 +275,19 @@ always_comb begin
 		  prepCommand = 0;
 		end
 		
-		3'b110: begin
-		  $display("Unused opcode, 110! (with prep)");
-		  WritePrepReg = 0;
-		  ReadPrepReg = 0;
-		  WriteEnabled = 0;
+		3'b110: begin  // PXOR
+		  WritePrepReg = 1;
+		  ReadPrepReg = 1;
+		  WriteEnabled = 1;
 		  enablePrep = 0;
 		  disablePrep = 0;
 		  DataWrite = 0;
 		  DataRead = 0;
-		  ALUOp = 3'b000;
+		  ALUOp = 3'b010;
 		  controlBranch = 0;
-		  aluRegSource = 0;
+		  aluRegSource = 1;
 		  aluConstantOrOne = 0;
-		  saveAluToReg = 0;
+		  saveAluToReg = 1;
 		  prepCommand = 0;
 		end
 		

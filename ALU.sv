@@ -39,9 +39,8 @@ always_comb begin
 	   Output = input1 & input2;
 	 end
 	 
-	 3'b111: begin  // unused
-	   $display("Unused ALU operation, 111!");
-		Output = input1;
+	 3'b111: begin  // input2 is 0
+		Output = input2 ^ 8'b00000000;
 	 end
 	 
 	 default: begin

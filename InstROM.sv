@@ -12,7 +12,7 @@ module InstROM #(parameter A=16, W=9) (
   input       [A-1:0] InstAddress,
   output logic[W-1:0] InstOut);
 
-  always_comb begin  
+  /*always_comb begin  
 	  case (InstAddress)
 		 12'b000000000000: begin
 		   InstOut = 9'b000_11_11_11;  // PREP #111111
@@ -42,7 +42,7 @@ module InstROM #(parameter A=16, W=9) (
 			InstOut = 9'b111_11_11_11;  // END PROGRAM
 		 end
 	  endcase
-  end
+  end*/
 	 
 // Instruction format: {4bit opcode, 3bit rs or rt, 3bit rt, immediate, or branch target}
 	 
@@ -69,14 +69,14 @@ module InstROM #(parameter A=16, W=9) (
 //   need $readmemh or $readmemb to initialize all of the elements
   
   
-/* CURRENTLY DISABLED BECAUSE WE HAVEN'T BEEN TOLD TO USE YET AND IS JUST PLACEHOLDER  
   logic[W-1:0] inst_rom[2**(A)];
   always_comb InstOut = inst_rom[InstAddress];
  
   initial begin		                  // load from external text file
-  	$readmemb("machine_code.txt",inst_rom);
+  	$readmemb("machine_code.alex",inst_rom);
+	$display(inst_rom[0]);
   end 
-*/  
+
   
   
 endmodule
