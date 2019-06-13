@@ -15,15 +15,20 @@ module IF(
   input req,
   output logic[15:0] PC		  // program counter
   );
+  
+  logic halted = 1'b1;
 	 
   always_ff @(posedge clk)	  // or just always; always_ff is a linting construct
-	 if(Init)
+	 if(Init) begin
 	   PC <= 0;				  // for first program; want different value for 2nd or 3rd
-	 else if (req)
+		halted <= 1'b1;
+	 end else if (req) begin
 	   PC <= PC+1;
-	 else if(Halt)
+		halted <= 1'b0;
+	 end else if(halted || Halt) begin
 	   PC <= PC;
-	 else if(Branch_rel && ALU_zero) // conditional relative jump
+		halted <= 1'b1;
+	 end else if(Branch_rel && ALU_zero) // conditional relative jump
 	   PC <= Target + PC;
 	 else
 	   PC <= PC+1;		      // default increment (no need for ARM/MIPS +4 -- why?)

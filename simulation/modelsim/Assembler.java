@@ -63,14 +63,21 @@ public class Assembler {
      * Do the actual work with the inputs
      */
     private void assemble () throws IOException {
-        String line = null;
+	String line = "SLL $r0 $r0 0";
+	line = sanitize(line);
+	String error = parse(line);
+	if (error != null) {
+	    System.err.printf(error + "\n", -1);
+	    System.exit(1);
+	}
+
         int lineNum;
         for (lineNum = 1; (line = in.readLine()) != null; lineNum++) {
             line = sanitize(line);
             if (line == null) {
                 continue;
             } else {
-                String error = parse(line);
+                error = parse(line);
                 if (error != null) {
                     System.err.printf(error + "\n", lineNum);
                     System.exit(1);

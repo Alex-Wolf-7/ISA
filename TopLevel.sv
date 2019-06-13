@@ -62,7 +62,7 @@ dm #(.DW(DW),.AW(AW)) dm(
   DmDatIn,
   DmDatOut
 ); // instantiate data memory
-assign DmMemAdr = regfileReadReg1;
+assign DmMemAdr = regfileReadData1;
 assign DmReadEn = controlDataRead;
 assign DmWriteEn = controlDataWrite;
 assign DmDatIn = regfileReadData2;
@@ -156,12 +156,12 @@ IF IF(
 assign IfBranch_rel = controlBranch;
 assign IfALU_zero = AluZero;
 always_comb begin
-	if (regfileReadData1[5] == 1'b1) begin
-		IfTarget[15:6] = 10'b1111111111;
+	if (regfileReadData1[7] == 1'b1) begin
+		IfTarget[15:8] = 10'b11111111;
 	end else begin
-		IfTarget[15:6] = 10'b0000000000;
+		IfTarget[15:8] = 10'b00000000;
 	end
-	IfTarget[5:0] = regfileReadData1[5:0];
+	IfTarget[7:0] = regfileReadData1[7:0];
 end
 assign IfInit = reset;
 assign IfHalt = ack;

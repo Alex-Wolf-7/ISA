@@ -1,5 +1,4 @@
 # Input is r1r0, with first 5 bits of r1 are 0s and don't count
-
 PREP 000000
 LW   $r0
 PREP 000001
@@ -49,8 +48,8 @@ XORR $r3, $r1
 XOR  $r2, $r2, $r3      
 PREP 001110
 ANDI $r3, $r0           # get 4:2
-XORR $r3, $r3
 XOR  $r3, $r3, $r2
+XORR $r3, $r3
 PREP 111101		
 SW   $r3		# P4: store at 100001, 1 byte
 
@@ -63,6 +62,7 @@ PSFT 000010
 PXOR $r2
 ANDI $r2, $r0
 XOR  $r2, $r2, $r3
+XORR $r2, $r2
 PREP 111110
 SW   $r2		# P2: store at 100010, 1 byte
 
@@ -75,6 +75,7 @@ PSFT 000010
 PXOR $r2
 ANDI $r2, $r0
 XOR  $r3, $r2, $r3
+XORR $r3, $r3
 PREP 111111
 SW   $r3		# P1: store at 100011, 1 byte
 
@@ -148,12 +149,14 @@ XOR  $r0, $r1, $r0
 PREP 000011
 BEQ  $r0
 
-# Branch to top. Needs to be double checkod
-PREP 000011
+# Branch to top. Needs to be double check
+PREP 000000
+SAVE $r3
+PREP 000001
 SAVE $r0
-PREP 011101
+PREP 100100
 PSFT 000010
 PXOR $r0
-BEQ  $r1
+BEQ  $r3
 
 END
